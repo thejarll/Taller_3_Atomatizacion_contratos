@@ -1,0 +1,561 @@
+{
+  "name": "Final_1 copy",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_000",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        140,
+        200
+      ],
+      "id": "183d3876-d2c6-413d-92ae-3404dab49f4b",
+      "name": "Leer Contrato"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=YOUR API KEY",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        200
+      ],
+      "id": "a90aac92-86ee-46fe-98cc-ee3d0e184953",
+      "name": "Request a Gemini"
+    },
+    {
+      "parameters": {
+        "subject": "Contrato revisado por IA.",
+        "html": "=<div style=\"font-family: Arial, sans-serif; line-height: 1.6;\">\n  <h2>📄 Contrato revisado por IA</h2>\n\n  <div style=\"white-space: pre-wrap; margin-bottom: 20px;\">\n    {{ $json[\"candidates\"][0][\"content\"][\"parts\"][0][\"text\"] }}\n  </div>\n\n  <p>Puedes descargar el contrato reescrito como PDF en el siguiente enlace:</p>\n  <p><a href=\"{{ $json[\"linkPDF\"] }}\" target=\"_blank\">📎 Descargar contrato reescrito (PDF)</a></p>\n\n  <hr>\n  <p style=\"font-size: 0.9em; color: #777;\">Este correo fue generado automáticamente con IA. Revisa antes de enviar formalmente.</p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2960,
+        220
+      ],
+      "id": "828ac376-bbeb-4873-a754-69907cd10f9c",
+      "name": "Send Email",
+      "webhookId": "f545f460-3800-40ce-badd-d89b91dee8c6",
+      "credentials": {
+        "smtp": {
+          "id": "Z6W411BfV9NqzEH9",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const contrato = $json[\"text\"];\n\nconst prompt = `\nAnaliza el siguiente contrato legal. Identifica cláusulas ambiguas, riesgosas o poco claras. Luego presenta una versión mejorada o sugerida del documento. Usa esta estructura clara y ordenada en tu respuesta:\n\n1. 🔍 Análisis del Documento (en lista numerada, punto por punto)\n2. ✍️ Sugerencia de Reescritura (en bloque con saltos de línea, no cambies este titulo por nada del mundo, reescribe el titulo de esta forma: ## ✍️ Sugerencia de Reescritura)\n3. ✅ Recomendaciones Finales (como lista de mercado)\n4. 📌 Justificación de los Cambios (breve resumen al final)\n\nContrato original:\n${contrato}\n\nEscribe de forma técnica, legal, clara y profesional. No olvides los títulos y separadores. Usa viñetas, numeraciones y saltos de línea si es necesario.\n`;\n\nreturn [{ json: { prompt } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        200
+      ],
+      "id": "a6e4444b-d4a6-4209-bdd2-1fee240499ef",
+      "name": "Generar Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    contents: [\n      {\n        parts: [\n          {\n            text: $json[\"prompt\"]\n          }\n        ]\n      }\n    ]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        200
+      ],
+      "id": "0809a945-7e08-4d7a-be74-96229b486969",
+      "name": "Preparar Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const textoCompleto = $json[\"candidates\"][0][\"content\"][\"parts\"][0][\"text\"];\n\n// Buscar la sección que empieza en \"### Sugerencia de Reescritura\"\nconst sugerencia = textoCompleto.split('## ✍️ Sugerencia de Reescritura')[1]?.split('###')[0]?.trim();\n\nreturn [{\n  json: {\n    sugerenciaTextoPlano: sugerencia || \"No se encontró la sección de reescritura.\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        480
+      ],
+      "id": "5004d5a8-1d24-4d35-9b3b-f6b1e4978d55",
+      "name": "Extraer Sugerencia"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=YOUR API KEY HERE",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        480
+      ],
+      "id": "4f958c45-6dd7-45d6-b037-9888306288be",
+      "name": "Request gemini - generacion de nuevo contrato"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/from/html",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "Your API KEY here"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "html",
+              "value": "={{$node[\"Preparar HTML Contrato1\"].json[\"html\"]}}"
+            },
+            {
+              "name": "name",
+              "value": "\"contrato-reescrito.pdf\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2300,
+        480
+      ],
+      "id": "bcaef41b-c7db-447b-9da6-0dd6cf186dde",
+      "name": "Request PDF.co - Generacion de PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    linkPDF: $json[\"url\"]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2480,
+        480
+      ],
+      "id": "5e7180a0-88eb-4b71-8907-5049fe23ad54",
+      "name": "Extraer URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    contents: [\n      {\n        parts: [\n          {\n            text: \"A partir de la siguiente sugerencia legal, redacta un contrato completo, profesional, formal y con lenguaje técnico. Usa formato de contrato tradicional con encabezados, datos del arrendador y arrendatario, y estructura de párrafos bien definida.\\n\\nEsta es la sugerencia:\\n\\n\" + $node[\"Extraer Sugerencia\"].json[\"sugerenciaTextoPlano\"]\n          }\n        ]\n      }\n    ]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        480
+      ],
+      "id": "5306dc2b-34e0-4563-890e-7294e738613c",
+      "name": "Preparar Request Contrato"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    html: $node[\"Generar request para PDF.co\"].json[\"html\"],\n    name: \"contrato-reescrito.pdf\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        480
+      ],
+      "id": "af8f2e55-7926-4c69-ae29-10320bec2525",
+      "name": "Preparar HTML Contrato1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const contratoHTML = `\n<html>\n  <body style=\"font-family: Arial, sans-serif; line-height: 1.6;\">\n    <h2 style=\"text-align:center;\">Contrato de Arrendamiento Reescrito</h2>\n    <div style=\"white-space: pre-wrap;\">\n      ${$json[\"candidates\"][0][\"content\"][\"parts\"][0][\"text\"]}\n    </div>\n  </body>\n</html>\n`;\n\nreturn [{\n  json: {\n    html: contratoHTML\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        480
+      ],
+      "id": "e5b4db06-5ac6-4d61-bb21-44aa8d394c86",
+      "name": "Generar request para PDF.co"
+    },
+    {
+      "parameters": {
+        "downloadAttachments": true,
+        "dataPropertyAttachmentsPrefixName": "attachment_00",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        200
+      ],
+      "id": "616b02f0-aeaf-415a-8393-8f8368877709",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "iStwybGjrwbIgpgM",
+          "name": "IMAP account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2720,
+        220
+      ],
+      "id": "bcf6a1de-ad56-45fe-b8b2-4c490c77f6e0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = $json[\"text\"] || \"\";\n\nconst tipos = [\"arrendamiento\", \"prestación de servicios\", \"laboral\", \"compraventa\"];\nlet tipoDetectado = \"otro\";\n\n// Busca coincidencia de palabras clave\nfor (let tipo of tipos) {\n  if (texto.toLowerCase().includes(`contrato de ${tipo}`)) {\n    tipoDetectado = tipo;\n    break;\n  }\n}\n\nreturn [{\n  json: {\n    tipoContrato: tipoDetectado,\n    textoContrato: texto\n  }\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        860
+      ],
+      "id": "ddce7743-1d47-45d9-9410-776d3199494e",
+      "name": "Detectar tipo contrato"
+    },
+    {
+      "parameters": {
+        "url": "={{$node[\"Extraer URL\"].json[\"linkPDF\"]}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/pdf"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2740,
+        480
+      ],
+      "id": "42542227-6284-4a6c-a17a-0f20c22b9d19",
+      "name": "Descargar PDF"
+    },
+    {
+      "parameters": {
+        "name": "={{`contrato-reescrito-${$node[\"Detectar tipo contrato\"].json[\"tipoContrato\"]}-${new Date().toISOString().slice(0,16).replace('T','_').replace(':','-')}.pdf`}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3200,
+        580
+      ],
+      "id": "d7f8cf46-2d46-48c3-8da6-73c7c1583e46",
+      "name": "Subimos al drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "9gZv6Jwf9LFjSFIb",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3000,
+        620
+      ],
+      "id": "0e15babb-2b60-453c-84fc-385cd0d0507d",
+      "name": "Merge1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Leer Contrato": {
+      "main": [
+        [
+          {
+            "node": "Generar Prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Detectar tipo contrato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request a Gemini": {
+      "main": [
+        [
+          {
+            "node": "Extraer Sugerencia",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Prompt": {
+      "main": [
+        [
+          {
+            "node": "Preparar Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Request": {
+      "main": [
+        [
+          {
+            "node": "Request a Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Sugerencia": {
+      "main": [
+        [
+          {
+            "node": "Preparar Request Contrato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request gemini - generacion de nuevo contrato": {
+      "main": [
+        [
+          {
+            "node": "Generar request para PDF.co",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        []
+      ]
+    },
+    "Request PDF.co - Generacion de PDF": {
+      "main": [
+        [
+          {
+            "node": "Extraer URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer URL": {
+      "main": [
+        [
+          {
+            "node": "Descargar PDF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Preparar Request Contrato": {
+      "main": [
+        [
+          {
+            "node": "Request gemini - generacion de nuevo contrato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar HTML Contrato1": {
+      "main": [
+        [
+          {
+            "node": "Request PDF.co - Generacion de PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar request para PDF.co": {
+      "main": [
+        [
+          {
+            "node": "Preparar HTML Contrato1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Leer Contrato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar PDF": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subimos al drive": {
+      "main": [
+        []
+      ]
+    },
+    "Detectar tipo contrato": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Subimos al drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "aad266a3-a169-479b-83d0-44132e7b9dff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "394ca85b7733d18e64a27bc975504809c51da74518a0531efd2245a7ba7b571e"
+  },
+  "id": "R2gqgQMDwzFlSJnd",
+  "tags": []
+}
